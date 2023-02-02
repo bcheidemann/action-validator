@@ -1,5 +1,7 @@
 use serde_json::Value;
 
+use crate::log::{error};
+
 pub fn validate_as_action(doc: &Value) -> bool {
     validate_with_schema(
         doc,
@@ -17,6 +19,7 @@ pub fn validate_as_workflow(doc: &Value) -> bool {
 fn validate_with_schema(doc: &Value, schema: &[u8]) -> bool {
     let schema_json: serde_json::Value =
         serde_json::from_str(String::from_utf8_lossy(schema).as_ref()).unwrap();
+
     let mut scope = valico::json_schema::Scope::new();
     let validator = scope.compile_and_return(schema_json, false).unwrap();
 
@@ -25,7 +28,7 @@ fn validate_with_schema(doc: &Value, schema: &[u8]) -> bool {
     if state.is_valid() {
         true
     } else {
-        eprintln!("Validation failed: {state:#?}");
+        error(&format!("Validation failed: {state:#?}"));
         false
     }
 }

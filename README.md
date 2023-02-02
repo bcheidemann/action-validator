@@ -11,6 +11,12 @@ similar situations.
 
 We have many ways to install `action-validator`.
 
+## NPM Package
+
+```sh
+npm install @bcheidemann/action-validator --save-dev
+```
+
 
 ## Pre-built binaries
 
@@ -82,6 +88,14 @@ Use `action-validator -h` to see additional options.
 > checking will explode horribly if you run it from a sub-directory of the
 > repo -- or, heaven forfend, outside the repository entirely.
 
+## Node
+
+```js
+let validator = require('@bcheidemann/action-validator');
+let src = require('fs').readFileSync('test-workflow.yml', 'utf8');
+
+validator.validateWorkflow(src);
+```
 
 ## In a GitHub Action
 

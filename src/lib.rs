@@ -1,43 +1,101 @@
 mod config;
+mod log;
 mod schemas;
+mod utils;
 
-use std::fs::File;
+use std::fs;
+use config::{JsConfig, ActionType, Config};
+use log::error;
+use utils::set_panic_hook;
+use wasm_bindgen::prelude::*;
 
-pub use crate::config::Config;
+pub use crate::config::CliConfig;
 use crate::schemas::{validate_as_action, validate_as_workflow};
 use glob::glob;
 use serde_json::{Map, Value};
 
-pub fn run(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
-    let fd = File::open(&config.src)?;
-    let doc = parse_src(fd)?;
+// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
+// allocator.
+#[cfg(feature = "wee_alloc")]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-    let file_name = config
-        .src
-        .file_name()
-        .ok_or("Unable to derive file name from src!")?;
-    let valid_doc = if file_name == "action.yml" || file_name == "action.yaml" {
-        if config.verbose {
-            eprintln!(
-                "Treating {} as an Action definition",
-                config
-                    .src
-                    .to_str()
-                    .ok_or("Unable to convert PathBuf to string!")?
-            );
-        }
-        validate_as_action(&doc)
-    } else {
-        if config.verbose {
-            eprintln!(
-                "Treating {} as a Workflow definition",
-                config
-                    .src
-                    .to_str()
-                    .ok_or("Unable to convert PathBuf to string!")?
-            );
-        }
-        validate_as_workflow(&doc) && validate_paths(&doc) && validate_job_needs(&doc)
+#[wasm_bindgen(js_name = validateAction)]
+pub fn validate_action(src: &str, verbose: Option<bool>) -> Result<(), JsValue> {
+    set_panic_hook();
+
+    let config = JsConfig {
+        action_type: ActionType::Action,
+        src,
+        verbose: verbose.unwrap_or(false),
+    };
+
+    run_js(&config)
+}
+
+#[wasm_bindgen(js_name = validateWorkflow)]
+pub fn validate_workflow(src: &str, verbose: Option<bool>) -> Result<(), JsValue> {
+    set_panic_hook();
+
+    let config = JsConfig {
+        action_type: ActionType::Workflow,
+        src,
+        verbose: verbose.unwrap_or(false),
+    };
+
+    run_js(&config)
+}
+
+pub fn run_js(config: &JsConfig) -> Result<(), JsValue> {
+    let config = Config {
+        file_name: None,
+        action_type: config.action_type,
+        src: config.src,
+        verbose: config.verbose,
+    };
+
+    run(&config).map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
+pub fn run_cli(config: &CliConfig) -> Result<(), Box<dyn std::error::Error>> {
+    let file_name = config.src.file_name().ok_or("Unable to derive file name from src!")?.to_str();
+
+    let config = Config {
+        file_name,
+        action_type: match file_name {
+            Some("action.yml") | Some("action.yaml") => ActionType::Action,
+            _ => ActionType::Workflow,
+        },
+        src: &fs::read_to_string(&config.src)?,
+        verbose: config.verbose,
+    };
+
+    run(&config)
+}
+
+fn run(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
+    let file_name = config.file_name.unwrap_or("file");
+    let doc = serde_yaml::from_str(config.src)?;
+
+    let valid_doc = match config.action_type {
+        ActionType::Action => {
+            if config.verbose {
+                error(&format!(
+                    "Treating {} as an Action definition",
+                    file_name
+                ));
+            }
+            validate_as_action(&doc)
+        },
+        ActionType::Workflow => {
+            if config.verbose {
+                error(&format!(
+                    "Treating {} as a Workflow definition",
+                    file_name
+                ));
+            }
+            validate_as_workflow(&doc) && validate_paths(&doc) && validate_job_needs(&doc)
+        },
     };
 
     if valid_doc {
@@ -45,10 +103,6 @@ pub fn run(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     } else {
         Err("validation failed".into())
     }
-}
-
-fn parse_src(fd: std::fs::File) -> serde_yaml::Result<serde_json::Value> {
-    serde_yaml::from_reader(fd)
 }
 
 fn validate_paths(doc: &serde_json::Value) -> bool {
@@ -76,12 +130,12 @@ fn validate_globs(globs: &serde_json::Value, path: &str) -> bool {
             match glob(g.as_str().unwrap()) {
                 Ok(res) => {
                     if res.count() == 0 {
-                        eprintln!("Glob {g} in {path} does not match any files");
+                        error(&format!("Glob {g} in {path} does not match any files"));
                         success = false;
                     }
                 }
                 Err(e) => {
-                    eprintln!("Glob {g} in {path} is invalid: {e}");
+                    error(&format!("Glob {g} in {path} is invalid: {e}"));
                     success = false;
                 }
             };
@@ -97,7 +151,7 @@ fn validate_job_needs(doc: &serde_json::Value) -> bool {
     }
 
     fn print_error(needs_str: &str) {
-        eprintln!("unresolved job {needs_str}");
+        error(&format!("unresolved job {needs_str}"));
     }
 
     let mut success = true;

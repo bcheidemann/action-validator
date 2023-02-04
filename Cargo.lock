@@ -797,7 +797,7 @@ dependencies = [
 [[package]]
 name = "valico"
 version = "3.6.1-alpha.0"
-source = "git+https://github.com/bcheidemann/valico?branch=feat/add-wasm-support#8812eaee38191801d380a506faac11973fc9a413"
+source = "git+https://github.com/s-panferov/valico?rev=6697c32cbb40091062841bce49d7c18875e1972e#6697c32cbb40091062841bce49d7c18875e1972e"
 dependencies = [
  "addr",
  "base64",

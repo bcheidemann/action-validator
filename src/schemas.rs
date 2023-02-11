@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use crate::log::{error};
+use crate::log::error;
 
 pub fn validate_as_action(doc: &Value) -> bool {
     validate_with_schema(

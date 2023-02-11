@@ -2,10 +2,11 @@ mod config;
 mod log;
 mod schemas;
 mod utils;
+mod validation_state;
 
-use std::fs;
-use config::{JsConfig, ActionType, Config};
+use config::{ActionType, Config, JsConfig};
 use log::error;
+use std::fs;
 use utils::set_panic_hook;
 use wasm_bindgen::prelude::*;
 
@@ -58,7 +59,11 @@ pub fn run_js(config: &JsConfig) -> Result<(), JsValue> {
 }
 
 pub fn run_cli(config: &CliConfig) -> Result<(), Box<dyn std::error::Error>> {
-    let file_name = config.src.file_name().ok_or("Unable to derive file name from src!")?.to_str();
+    let file_name = config
+        .src
+        .file_name()
+        .ok_or("Unable to derive file name from src!")?
+        .to_str();
 
     let config = Config {
         file_name,
@@ -80,22 +85,16 @@ fn run(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     let valid_doc = match config.action_type {
         ActionType::Action => {
             if config.verbose {
-                error(&format!(
-                    "Treating {} as an Action definition",
-                    file_name
-                ));
+                error(&format!("Treating {} as an Action definition", file_name));
             }
             validate_as_action(&doc)
-        },
+        }
         ActionType::Workflow => {
             if config.verbose {
-                error(&format!(
-                    "Treating {} as a Workflow definition",
-                    file_name
-                ));
+                error(&format!("Treating {} as a Workflow definition", file_name));
             }
             validate_as_workflow(&doc) && validate_paths(&doc) && validate_job_needs(&doc)
-        },
+        }
     };
 
     if valid_doc {
@@ -120,14 +119,17 @@ fn validate_paths(doc: &serde_json::Value) -> bool {
     success
 }
 
+// TODO: Handle loading glob in WASM build
 fn validate_globs(globs: &serde_json::Value, path: &str) -> bool {
     if globs.is_null() {
         true
-    } else {
+    } else if let Some(globs) = globs.as_array() {
         let mut success = true;
 
-        for g in globs.as_array().unwrap() {
-            match glob(g.as_str().unwrap()) {
+        for g in globs {
+            match glob(
+                g.as_str().unwrap(),
+            ) {
                 Ok(res) => {
                     if res.count() == 0 {
                         error(&format!("Glob {g} in {path} does not match any files"));
@@ -142,6 +144,8 @@ fn validate_globs(globs: &serde_json::Value, path: &str) -> bool {
         }
 
         success
+    } else {
+        unreachable!("validate_globs called on globs object with invalid type: must be array or null")
     }
 }
 
@@ -156,21 +160,21 @@ fn validate_job_needs(doc: &serde_json::Value) -> bool {
 
     let mut success = true;
     if let Some(jobs) = doc["jobs"].as_object() {
-        for job_key in jobs.keys() {
-            let needs = &jobs.get(job_key).unwrap()["needs"];
-            if needs.is_string() {
-                let needs_str = needs.as_str().unwrap();
+        for (_, job) in jobs.iter() {
+            let needs = &job["needs"];
+            if let Some(needs_str) = needs.as_str() {
                 if is_invalid_dependency(jobs, needs_str) {
                     success = false;
                     print_error(needs_str);
                 }
-            } else if needs.is_array() {
-                for need in needs.as_array().unwrap() {
-                    let need_str = need.as_str().unwrap();
-                    if is_invalid_dependency(jobs, need_str) {
-                        success = false;
-                        print_error(need_str);
-                    }
+            } else if let Some(needs_array) = needs.as_array() {
+                for needs_str in needs_array
+                    .iter()
+                    .filter_map(|v| v.as_str())
+                    .filter(|needs_str| is_invalid_dependency(jobs, needs_str))
+                {
+                    success = false;
+                    print_error(needs_str);
                 }
             }
         }

@@ -10,6 +10,7 @@ dependencies = [
  "console_error_panic_hook",
  "glob",
  "serde",
+ "serde-wasm-bindgen",
  "serde_json",
  "serde_yaml",
  "valico",
@@ -667,6 +668,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f12d06de37cf59146fbdecab66aa99f9fe4f78722e3607577a5375d66bd0c913"
 
 [[package]]
+name = "serde-wasm-bindgen"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3b4c031cd0d9014307d82b8abf653c0290fbdaeb4c02d00c63cf52f728628bf"
+dependencies = [
+ "js-sys",
+ "serde",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "serde_json"
 version = "1.0.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -797,7 +809,6 @@ dependencies = [
 [[package]]
 name = "valico"
 version = "3.6.1-alpha.0"
-source = "git+https://github.com/s-panferov/valico?rev=6697c32cbb40091062841bce49d7c18875e1972e#6697c32cbb40091062841bce49d7c18875e1972e"
 dependencies = [
  "addr",
  "base64",

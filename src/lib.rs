@@ -2,10 +2,10 @@ mod config;
 mod log;
 mod schemas;
 mod utils;
-mod validation_state;
 
 use config::{ActionType, Config, JsConfig};
 use log::error;
+use valico::json_schema::ValidationState;
 use std::fs;
 use utils::set_panic_hook;
 use wasm_bindgen::prelude::*;
@@ -22,7 +22,7 @@ use serde_json::{Map, Value};
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen(js_name = validateAction)]
-pub fn validate_action(src: &str, verbose: Option<bool>) -> Result<(), JsValue> {
+pub fn validate_action(src: &str, verbose: Option<bool>) -> JsValue {
     set_panic_hook();
 
     let config = JsConfig {
@@ -35,7 +35,7 @@ pub fn validate_action(src: &str, verbose: Option<bool>) -> Result<(), JsValue> 
 }
 
 #[wasm_bindgen(js_name = validateWorkflow)]
-pub fn validate_workflow(src: &str, verbose: Option<bool>) -> Result<(), JsValue> {
+pub fn validate_workflow(src: &str, verbose: Option<bool>) -> JsValue {
     set_panic_hook();
 
     let config = JsConfig {
@@ -47,7 +47,7 @@ pub fn validate_workflow(src: &str, verbose: Option<bool>) -> Result<(), JsValue
     run_js(&config)
 }
 
-pub fn run_js(config: &JsConfig) -> Result<(), JsValue> {
+pub fn run_js(config: &JsConfig) -> JsValue {
     let config = Config {
         file_name: None,
         action_type: config.action_type,
@@ -55,7 +55,14 @@ pub fn run_js(config: &JsConfig) -> Result<(), JsValue> {
         verbose: config.verbose,
     };
 
-    run(&config).map_err(|e| JsValue::from_str(&e.to_string()))
+    let result = run(&config);
+
+    match result {
+        Ok(state) => {
+            serde_wasm_bindgen::to_value(&state).unwrap()
+        }
+        Err(e) => unimplemented!(),
+    }
 }
 
 pub fn run_cli(config: &CliConfig) -> Result<(), Box<dyn std::error::Error>> {
@@ -75,14 +82,26 @@ pub fn run_cli(config: &CliConfig) -> Result<(), Box<dyn std::error::Error>> {
         verbose: config.verbose,
     };
 
-    run(&config)
+    let result = run(&config);
+
+    match result {
+        Ok(state) => {
+            if !state.is_valid() {
+                Err("validation failed".into())
+            }
+            else {
+                Ok(())
+            }
+        }
+        Err(e) => Err(e),
+    }
 }
 
-fn run(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
+fn run(config: &Config) -> Result<ValidationState, Box<dyn std::error::Error>> {
     let file_name = config.file_name.unwrap_or("file");
     let doc = serde_yaml::from_str(config.src)?;
 
-    let valid_doc = match config.action_type {
+    let state = match config.action_type {
         ActionType::Action => {
             if config.verbose {
                 error(&format!("Treating {} as an Action definition", file_name));
@@ -93,15 +112,12 @@ fn run(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
             if config.verbose {
                 error(&format!("Treating {} as a Workflow definition", file_name));
             }
-            validate_as_workflow(&doc) && validate_paths(&doc) && validate_job_needs(&doc)
+            // TODO: Re-enable path and job validation
+            validate_as_workflow(&doc) // && validate_paths(&doc) && validate_job_needs(&doc)
         }
     };
 
-    if valid_doc {
-        Ok(())
-    } else {
-        Err("validation failed".into())
-    }
+    Ok(state)
 }
 
 fn validate_paths(doc: &serde_json::Value) -> bool {

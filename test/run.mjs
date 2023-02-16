@@ -2,7 +2,7 @@
 import chalk from "chalk";
 import * as diff from "diff";
 import fs from "fs";
-import * as action_validator from "../pkg/action_validator.js";
+import * as action_validator from "../dist/action_validator.js";
 
 const update = process.argv.includes("--update") || process.argv.includes("-u");
 

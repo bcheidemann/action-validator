@@ -12,15 +12,15 @@
     "url": "https://github.com/mpalmer/action-validator"
   },
   "files": [
-    "pkg/action_validator_bg.wasm",
-    "pkg/action_validator.js",
-    "pkg/action_validator.d.ts"
+    "dist/action_validator_bg.wasm",
+    "dist/action_validator.js",
+    "dist/action_validator.d.ts"
   ],
   "main": "pkg/action_validator.js",
   "homepage": "https://github.com/mpalmer/action-validator",
-  "types": "pkg/action_validator.d.ts",
+  "types": "dist/action_validator.d.ts",
   "scripts": {
-    "build": "wasm-pack build --out-dir target/wasm-pack/build --no-typescript --target nodejs --features js && cp target/wasm-pack/build/action_validator_bg.wasm pkg/ && cp target/wasm-pack/build/action_validator.js pkg/ && cp target/wasm-pack/build/action_validator.js pkg/",
+    "build": "npx wasm-pack build --out-dir target/wasm-pack/build --no-typescript --target nodejs --features js && cp target/wasm-pack/build/action_validator_bg.wasm dist/ && cp target/wasm-pack/build/action_validator.js dist/ && cp target/wasm-pack/build/action_validator.js dist/",
     "test": "node test/run.mjs",
     "lint": "prettier --check .",
     "format": "prettier --write ."
@@ -28,6 +28,7 @@
   "devDependencies": {
     "chalk": "5.2.0",
     "diff": "5.1.0",
-    "prettier": "2.8.4"
+    "prettier": "2.8.4",
+    "wasm-pack": "0.10.3"
   }
 }

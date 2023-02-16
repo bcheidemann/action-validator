@@ -1,10 +1,14 @@
 use serde::Serialize;
 
-use crate::validation_error::ValidationError;
+use crate::{validation_error::ValidationError, config::ActionType};
 
 #[derive(Serialize, Debug)]
 pub struct ValidationState {
-  pub errors: Vec<ValidationError>,
+    #[serde(rename = "actionType")]
+    pub action_type: Option<ActionType>,
+    #[serde(rename = "filePath")]
+    pub file_path: Option<String>,
+    pub errors: Vec<ValidationError>,
 }
 
 impl ValidationState {
@@ -16,6 +20,8 @@ impl ValidationState {
 impl From<valico::json_schema::ValidationState> for ValidationState {
     fn from(state: valico::json_schema::ValidationState) -> Self {
         ValidationState {
+            file_path: None,
+            action_type: None,
             errors: state.errors.iter().map(|err| err.into()).collect(),
         }
     }
@@ -24,6 +30,8 @@ impl From<valico::json_schema::ValidationState> for ValidationState {
 impl From<&valico::json_schema::ValidationState> for ValidationState {
     fn from(state: &valico::json_schema::ValidationState) -> Self {
         ValidationState {
+            file_path: None,
+            action_type: None,
             errors: state.errors.iter().map(|err| err.into()).collect(),
         }
     }

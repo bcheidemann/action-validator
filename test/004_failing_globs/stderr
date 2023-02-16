@@ -1,4 +1,10 @@
 Validation failed: ValidationState {
+    action_type: Some(
+        Workflow,
+    ),
+    file_path: Some(
+        "004_failing_globs/glob.yml",
+    ),
     errors: [
         NoFilesMatchingGlobError {
             meta: ValidationErrorMetadata {

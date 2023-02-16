@@ -1,4 +1,5 @@
-use clap::Parser;
+use clap::{Parser};
+use serde::Serialize;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -17,9 +18,11 @@ pub struct CliConfig {
     pub src: PathBuf,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Serialize, Copy, Clone, Debug)]
 pub enum ActionType {
+    #[serde(rename = "action")]
     Action,
+    #[serde(rename = "workflow")]
     Workflow,
 }
 
@@ -29,9 +32,22 @@ pub struct JsConfig<'a> {
     pub verbose: bool,
 }
 
-pub struct Config<'a> {
+pub struct RunConfig<'a> {
+    pub file_path: Option<&'a str>,
     pub file_name: Option<&'a str>,
     pub action_type: ActionType,
     pub src: &'a str,
     pub verbose: bool,
+}
+
+impl<'a> From<&JsConfig<'a>> for RunConfig<'a> {
+    fn from(config: &JsConfig<'a>) -> Self {
+        RunConfig {
+            file_path: None,
+            file_name: None,
+            action_type: config.action_type,
+            src: config.src,
+            verbose: config.verbose,
+        }
+    }
 }

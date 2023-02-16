@@ -5,7 +5,7 @@ mod utils;
 mod validation_error;
 mod validation_state;
 
-use config::{ActionType, Config, JsConfig};
+use config::{ActionType, RunConfig, JsConfig};
 use validation_error::{ValidationError, ValidationErrorMetadata};
 use validation_state::ValidationState;
 use std::{fs};
@@ -50,15 +50,8 @@ pub fn validate_workflow(src: &str) -> JsValue {
 }
 
 pub fn run_js(config: &JsConfig) -> JsValue {
-    let config = Config {
-        file_name: None,
-        action_type: config.action_type,
-        src: config.src,
-        verbose: config.verbose,
-    };
-
-    let state = run(&config);
-
+    let run_config = config.into();
+    let state = run(&run_config);
     serde_wasm_bindgen::to_value(&state).unwrap()
 }
 
@@ -69,7 +62,8 @@ pub fn run_cli(config: &CliConfig) -> Result<(), Box<dyn std::error::Error>> {
         .ok_or("Unable to derive file name from src!")?
         .to_str();
 
-    let config = Config {
+    let run_config = RunConfig {
+        file_path: config.src.to_str(),
         file_name,
         action_type: match file_name {
             Some("action.yml") | Some("action.yaml") => ActionType::Action,
@@ -79,7 +73,7 @@ pub fn run_cli(config: &CliConfig) -> Result<(), Box<dyn std::error::Error>> {
         verbose: config.verbose,
     };
 
-    let state = run(&config);
+    let state = run(&run_config);
 
     if !state.is_valid() {
         log::error(&format!("Validation failed: {state:#?}"));
@@ -93,12 +87,14 @@ pub fn run_cli(config: &CliConfig) -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-fn run(config: &Config) -> ValidationState {
+fn run(config: &RunConfig) -> ValidationState {
     let file_name = config.file_name.unwrap_or("file");
     let doc = serde_yaml::from_str(config.src);
 
-    let state = match doc {
+    let mut state = match doc {
         Err(err) => ValidationState {
+            action_type: Some(config.action_type),
+            file_path: Some(file_name.to_string()),
             errors: vec![err.into()],
         },
         Ok(doc) => match config.action_type {
@@ -122,6 +118,9 @@ fn run(config: &Config) -> ValidationState {
             }
         },
     };
+
+    state.action_type = Some(config.action_type);
+    state.file_path = config.file_path.map(|file_name| file_name.to_string());
 
     state
 }

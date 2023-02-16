@@ -1,0 +1,6 @@
+/.cargo
+/node_modules
+/src/schemastore
+/target
+/test/**/*
+!/test/*

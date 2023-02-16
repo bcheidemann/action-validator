@@ -6,7 +6,6 @@ mod validation_error;
 mod validation_state;
 
 use config::{ActionType, Config, JsConfig};
-use log::{ error, warn, log };
 use validation_error::{ValidationError, ValidationErrorMetadata};
 use validation_state::ValidationState;
 use std::{fs};
@@ -25,26 +24,26 @@ use serde_json::{Map, Value};
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen(js_name = validateAction)]
-pub fn validate_action(src: &str, verbose: Option<bool>) -> JsValue {
+pub fn validate_action(src: &str) -> JsValue {
     set_panic_hook();
 
     let config = JsConfig {
         action_type: ActionType::Action,
         src,
-        verbose: verbose.unwrap_or(false),
+        verbose: false,
     };
 
     run_js(&config)
 }
 
 #[wasm_bindgen(js_name = validateWorkflow)]
-pub fn validate_workflow(src: &str, verbose: Option<bool>) -> JsValue {
+pub fn validate_workflow(src: &str) -> JsValue {
     set_panic_hook();
 
     let config = JsConfig {
         action_type: ActionType::Workflow,
         src,
-        verbose: verbose.unwrap_or(false),
+        verbose: false,
     };
 
     run_js(&config)
@@ -58,9 +57,9 @@ pub fn run_js(config: &JsConfig) -> JsValue {
         verbose: config.verbose,
     };
 
-    let result = run(&config);
+    let state = run(&config);
 
-    serde_wasm_bindgen::to_value(&result).unwrap()
+    serde_wasm_bindgen::to_value(&state).unwrap()
 }
 
 pub fn run_cli(config: &CliConfig) -> Result<(), Box<dyn std::error::Error>> {
@@ -80,9 +79,13 @@ pub fn run_cli(config: &CliConfig) -> Result<(), Box<dyn std::error::Error>> {
         verbose: config.verbose,
     };
 
-    let result = run(&config);
+    let state = run(&config);
 
-    if result.is_valid() {
+    if !state.is_valid() {
+        log::error(&format!("Validation failed: {state:#?}"));
+    }
+
+    if state.is_valid() {
         Ok(())
     }
     else {
@@ -101,13 +104,13 @@ fn run(config: &Config) -> ValidationState {
         Ok(doc) => match config.action_type {
             ActionType::Action => {
                 if config.verbose {
-                    log(&format!("Treating {} as an Action definition", file_name));
+                    log::log(&format!("Treating {} as an Action definition", file_name));
                 }
                 validate_as_action(&doc)
             }
             ActionType::Workflow => {
                 if config.verbose {
-                    log(&format!("Treating {} as a Workflow definition", file_name));
+                    log::log(&format!("Treating {} as a Workflow definition", file_name));
                 }
                 // TODO: Re-enable path and job validation
                 let mut state = validate_as_workflow(&doc);
@@ -119,10 +122,6 @@ fn run(config: &Config) -> ValidationState {
             }
         },
     };
-
-    if !state.is_valid() {
-        error(&format!("Validation failed: {state:#?}"));
-    }
 
     state
 }
@@ -136,7 +135,7 @@ fn validate_paths(doc: &serde_json::Value, state: &mut ValidationState) {
 
 #[cfg(feature = "js")]
 fn validate_globs(_: &serde_json::Value, _: &str, _: &mut ValidationState) {
-    warn!("Glob validation is not yet supported.");
+    log::warn("Glob validation is not yet supported.");
 }
 
 #[cfg(not(feature = "js"))]

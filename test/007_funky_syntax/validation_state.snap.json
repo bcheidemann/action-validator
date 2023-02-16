@@ -1,0 +1,16 @@
+{
+  "errors": [
+    {
+      "meta": {
+        "code": "parse_error",
+        "title": "Parse Error",
+        "detail": "mapping values are not allowed in this context at line 38 column 15",
+        "location": {
+          "index": 1069,
+          "line": 38,
+          "column": 15
+        }
+      }
+    }
+  ]
+}

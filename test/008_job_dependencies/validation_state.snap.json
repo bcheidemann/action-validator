@@ -1,0 +1,12 @@
+{
+  "errors": [
+    {
+      "meta": {
+        "code": "unresolved_job",
+        "path": "/jobs/build/needs",
+        "title": "Unresolved job",
+        "detail": "unresolved job asdf"
+      }
+    }
+  ]
+}

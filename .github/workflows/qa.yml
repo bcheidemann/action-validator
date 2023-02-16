@@ -111,7 +111,7 @@ jobs:
           command: build
 
       - name: Run Testsuite
-        working-directory: 'test'
+        working-directory: "test"
         run: ./run
 
   actions:

@@ -2,11 +2,14 @@ mod config;
 mod log;
 mod schemas;
 mod utils;
+mod validation_error;
+mod validation_state;
 
 use config::{ActionType, Config, JsConfig};
-use log::error;
-use valico::json_schema::ValidationState;
-use std::fs;
+use log::{ error, warn, log };
+use validation_error::{ValidationError, ValidationErrorMetadata};
+use validation_state::ValidationState;
+use std::{fs};
 use utils::set_panic_hook;
 use wasm_bindgen::prelude::*;
 
@@ -57,12 +60,7 @@ pub fn run_js(config: &JsConfig) -> JsValue {
 
     let result = run(&config);
 
-    match result {
-        Ok(state) => {
-            serde_wasm_bindgen::to_value(&state).unwrap()
-        }
-        Err(e) => unimplemented!(),
-    }
+    serde_wasm_bindgen::to_value(&result).unwrap()
 }
 
 pub fn run_cli(config: &CliConfig) -> Result<(), Box<dyn std::error::Error>> {
@@ -84,104 +82,125 @@ pub fn run_cli(config: &CliConfig) -> Result<(), Box<dyn std::error::Error>> {
 
     let result = run(&config);
 
-    match result {
-        Ok(state) => {
-            if !state.is_valid() {
-                Err("validation failed".into())
-            }
-            else {
-                Ok(())
-            }
-        }
-        Err(e) => Err(e),
+    if result.is_valid() {
+        Ok(())
+    }
+    else {
+        Err("validation failed".into())
     }
 }
 
-fn run(config: &Config) -> Result<ValidationState, Box<dyn std::error::Error>> {
+fn run(config: &Config) -> ValidationState {
     let file_name = config.file_name.unwrap_or("file");
-    let doc = serde_yaml::from_str(config.src)?;
+    let doc = serde_yaml::from_str(config.src);
 
-    let state = match config.action_type {
-        ActionType::Action => {
-            if config.verbose {
-                error(&format!("Treating {} as an Action definition", file_name));
+    let state = match doc {
+        Err(err) => ValidationState {
+            errors: vec![err.into()],
+        },
+        Ok(doc) => match config.action_type {
+            ActionType::Action => {
+                if config.verbose {
+                    log(&format!("Treating {} as an Action definition", file_name));
+                }
+                validate_as_action(&doc)
             }
-            validate_as_action(&doc)
-        }
-        ActionType::Workflow => {
-            if config.verbose {
-                error(&format!("Treating {} as a Workflow definition", file_name));
+            ActionType::Workflow => {
+                if config.verbose {
+                    log(&format!("Treating {} as a Workflow definition", file_name));
+                }
+                // TODO: Re-enable path and job validation
+                let mut state = validate_as_workflow(&doc);
+
+                validate_paths(&doc, &mut state);
+                validate_job_needs(&doc, &mut state);
+
+                state
             }
-            // TODO: Re-enable path and job validation
-            validate_as_workflow(&doc) // && validate_paths(&doc) && validate_job_needs(&doc)
-        }
+        },
     };
 
-    Ok(state)
+    if !state.is_valid() {
+        error(&format!("Validation failed: {state:#?}"));
+    }
+
+    state
 }
 
-fn validate_paths(doc: &serde_json::Value) -> bool {
-    let mut success = true;
-
-    success = validate_globs(&doc["on"]["push"]["paths"], "on.push.paths") && success;
-    success = validate_globs(&doc["on"]["push"]["paths-ignore"], "on.push.paths-ignore") && success;
-    success =
-        validate_globs(&doc["on"]["pull_request"]["paths"], "on.pull_request.paths") && success;
-    success = validate_globs(
-        &doc["on"]["pull_request"]["paths-ignore"],
-        "on.pull_request.paths-ignore",
-    ) && success;
-
-    success
+fn validate_paths(doc: &serde_json::Value, state: &mut ValidationState) {
+    validate_globs(&doc["on"]["push"]["paths"], "/on/push/paths", state);
+    validate_globs(&doc["on"]["push"]["paths-ignore"], "/on/push/paths-ignore", state);
+    validate_globs(&doc["on"]["pull_request"]["paths"], "/on/pull_request/paths", state);
+    validate_globs(&doc["on"]["pull_request"]["paths-ignore"], "/on/pull_request/paths-ignore", state);
 }
 
-// TODO: Handle loading glob in WASM build
-fn validate_globs(globs: &serde_json::Value, path: &str) -> bool {
+#[cfg(feature = "js")]
+fn validate_globs(_: &serde_json::Value, _: &str, _: &mut ValidationState) {
+    warn!("Glob validation is not yet supported.");
+}
+
+#[cfg(not(feature = "js"))]
+fn validate_globs(globs: &serde_json::Value, path: &str, state: &mut ValidationState) {
     if globs.is_null() {
-        true
-    } else if let Some(globs) = globs.as_array() {
-        let mut success = true;
+        return;
+    }
 
+    if let Some(globs) = globs.as_array() {
         for g in globs {
             match glob(
                 g.as_str().unwrap(),
             ) {
                 Ok(res) => {
                     if res.count() == 0 {
-                        error(&format!("Glob {g} in {path} does not match any files"));
-                        success = false;
+                        state.errors.push(ValidationError::NoFilesMatchingGlobError {
+                            meta: ValidationErrorMetadata {
+                                code: "glob_not_matched".into(),
+                                path: path.into(),
+                                title: "Glob does not match any files".into(),
+                                detail: Some(format!("Glob {g} in {path} does not match any files")),
+                            }
+                        });
                     }
                 }
                 Err(e) => {
-                    error(&format!("Glob {g} in {path} is invalid: {e}"));
-                    success = false;
+                    state.errors.push(ValidationError::InvalidGlobError{
+                        meta: ValidationErrorMetadata {
+                            code: "invalid_glob".into(),
+                            path: path.into(),
+                            title: "Glob does not match any files".into(),
+                            detail: Some(format!("Glob {g} in {path} is invalid: {e}")),
+                        }
+                    });
                 }
             };
         }
-
-        success
     } else {
         unreachable!("validate_globs called on globs object with invalid type: must be array or null")
     }
 }
 
-fn validate_job_needs(doc: &serde_json::Value) -> bool {
+fn validate_job_needs(doc: &serde_json::Value, state: &mut ValidationState) {
     fn is_invalid_dependency(jobs: &Map<String, Value>, need_str: &str) -> bool {
         !jobs.contains_key(need_str)
     }
 
-    fn print_error(needs_str: &str) {
-        error(&format!("unresolved job {needs_str}"));
+    fn handle_unresolved_job(job_name: &String, needs_str: &str, state: &mut ValidationState) {
+        state.errors.push(ValidationError::UnresolvedJobError {
+            meta: ValidationErrorMetadata {
+                code: "unresolved_job".into(),
+                path: format!("/jobs/{job_name}/needs"),
+                title: "Unresolved job".into(),
+                detail: Some(format!("unresolved job {needs_str}")),
+            },
+        });
     }
 
-    let mut success = true;
     if let Some(jobs) = doc["jobs"].as_object() {
-        for (_, job) in jobs.iter() {
+        for (job_name, job) in jobs.iter() {
             let needs = &job["needs"];
             if let Some(needs_str) = needs.as_str() {
                 if is_invalid_dependency(jobs, needs_str) {
-                    success = false;
-                    print_error(needs_str);
+                    handle_unresolved_job(job_name, needs_str, state);
                 }
             } else if let Some(needs_array) = needs.as_array() {
                 for needs_str in needs_array
@@ -189,12 +208,9 @@ fn validate_job_needs(doc: &serde_json::Value) -> bool {
                     .filter_map(|v| v.as_str())
                     .filter(|needs_str| is_invalid_dependency(jobs, needs_str))
                 {
-                    success = false;
-                    print_error(needs_str);
+                    handle_unresolved_job(job_name, needs_str, state);
                 }
             }
         }
     }
-
-    success
 }

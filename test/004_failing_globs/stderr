@@ -1,1 +1,14 @@
-Glob "004_bad_globs/*.txt" in on.push.paths does not match any files
+Validation failed: ValidationState {
+    errors: [
+        NoFilesMatchingGlobError {
+            meta: ValidationErrorMetadata {
+                code: "glob_not_matched",
+                path: "/on/push/paths",
+                title: "Glob does not match any files",
+                detail: Some(
+                    "Glob \"004_bad_globs/*.txt\" in /on/push/paths does not match any files",
+                ),
+            },
+        },
+    ],
+}

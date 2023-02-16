@@ -1,1 +1,14 @@
-unresolved job asdf
+Validation failed: ValidationState {
+    errors: [
+        UnresolvedJobError {
+            meta: ValidationErrorMetadata {
+                code: "unresolved_job",
+                path: "/jobs/build/needs",
+                title: "Unresolved job",
+                detail: Some(
+                    "unresolved job asdf",
+                ),
+            },
+        },
+    ],
+}

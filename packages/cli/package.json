@@ -15,7 +15,7 @@
   "main": "cli.js",
   "homepage": "https://github.com/mpalmer/action-validator",
   "bin": {
-    "action-validator": "./cli.js"
+    "action-validator": "./cli.mjs"
   },
   "scripts": {
     "build": "npx wasm-pack build --out-dir target/wasm-pack/build --no-typescript --target nodejs --features js && cp target/wasm-pack/build/action_validator_bg.wasm dist/ && cp target/wasm-pack/build/action_validator.js dist/ && cp target/wasm-pack/build/action_validator.js dist/",

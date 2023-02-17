@@ -241,20 +241,12 @@ impl From<&BoxedValicoError> for ValidationError {
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::AnyOf>() {
             ValidationError::AnyOfSchemaError {
-                states: err
-                    .states
-                    .iter()
-                    .map(ValidationState::from)
-                    .collect(),
+                states: err.states.iter().map(ValidationState::from).collect(),
                 meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::OneOf>() {
             ValidationError::OneOfSchemaError {
-                states: err
-                    .states
-                    .iter()
-                    .map(ValidationState::from)
-                    .collect(),
+                states: err.states.iter().map(ValidationState::from).collect(),
                 meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::Const>() {

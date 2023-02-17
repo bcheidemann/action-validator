@@ -126,7 +126,6 @@ jobs:
         run: npm ci
 
       - name: Build
-        if: ${{ matrix.package-dir }} == 'packages/core'
         run: npm run build
 
       - name: Install package dependencies

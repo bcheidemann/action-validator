@@ -110,6 +110,7 @@ jobs:
           submodules: true
 
       - name: Setup Rust
+        if: matrix.package-dir == 'packages/core'
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -120,12 +121,14 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install root dependencies
+        if: matrix.package-dir == 'packages/core'
         run: npm ci
 
       - name: Build
+        if: matrix.package-dir == 'packages/core'
         run: npm run build
 
       - name: Install package dependencies

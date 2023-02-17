@@ -5,11 +5,11 @@ mod utils;
 mod validation_error;
 mod validation_state;
 
-use config::{ActionType, RunConfig, JsConfig};
+use config::{ActionType, JsConfig, RunConfig};
+use std::fs;
+use utils::set_panic_hook;
 use validation_error::{ValidationError, ValidationErrorMetadata};
 use validation_state::ValidationState;
-use std::{fs};
-use utils::set_panic_hook;
 use wasm_bindgen::prelude::*;
 
 pub use crate::config::CliConfig;
@@ -81,8 +81,7 @@ pub fn run_cli(config: &CliConfig) -> Result<(), Box<dyn std::error::Error>> {
 
     if state.is_valid() {
         Ok(())
-    }
-    else {
+    } else {
         Err("validation failed".into())
     }
 }
@@ -127,15 +126,29 @@ fn run(config: &RunConfig) -> ValidationState {
 
 fn validate_paths(doc: &serde_json::Value, state: &mut ValidationState) {
     validate_globs(&doc["on"]["push"]["paths"], "/on/push/paths", state);
-    validate_globs(&doc["on"]["push"]["paths-ignore"], "/on/push/paths-ignore", state);
-    validate_globs(&doc["on"]["pull_request"]["paths"], "/on/pull_request/paths", state);
-    validate_globs(&doc["on"]["pull_request"]["paths-ignore"], "/on/pull_request/paths-ignore", state);
+    validate_globs(
+        &doc["on"]["push"]["paths-ignore"],
+        "/on/push/paths-ignore",
+        state,
+    );
+    validate_globs(
+        &doc["on"]["pull_request"]["paths"],
+        "/on/pull_request/paths",
+        state,
+    );
+    validate_globs(
+        &doc["on"]["pull_request"]["paths-ignore"],
+        "/on/pull_request/paths-ignore",
+        state,
+    );
 }
 
 #[cfg(feature = "js")]
 fn validate_globs(value: &serde_json::Value, path: &str, _: &mut ValidationState) {
     if !value.is_null() {
-        log::warn(&format!("WARNING: Glob validation is not yet supported. Glob at {path} will not be validated."));
+        log::warn(&format!(
+            "WARNING: Glob validation is not yet supported. Glob at {path} will not be validated."
+        ));
     }
 }
 
@@ -147,35 +160,39 @@ fn validate_globs(globs: &serde_json::Value, path: &str, state: &mut ValidationS
 
     if let Some(globs) = globs.as_array() {
         for g in globs {
-            match glob(
-                g.as_str().unwrap(),
-            ) {
+            match glob(g.as_str().unwrap()) {
                 Ok(res) => {
                     if res.count() == 0 {
-                        state.errors.push(ValidationError::NoFilesMatchingGlobError {
-                            meta: ValidationErrorMetadata {
-                                code: "glob_not_matched".into(),
-                                path: path.into(),
-                                title: "Glob does not match any files".into(),
-                                detail: Some(format!("Glob {g} in {path} does not match any files")),
-                            }
-                        });
+                        state
+                            .errors
+                            .push(ValidationError::NoFilesMatchingGlobError {
+                                meta: ValidationErrorMetadata {
+                                    code: "glob_not_matched".into(),
+                                    path: path.into(),
+                                    title: "Glob does not match any files".into(),
+                                    detail: Some(format!(
+                                        "Glob {g} in {path} does not match any files"
+                                    )),
+                                },
+                            });
                     }
                 }
                 Err(e) => {
-                    state.errors.push(ValidationError::InvalidGlobError{
+                    state.errors.push(ValidationError::InvalidGlobError {
                         meta: ValidationErrorMetadata {
                             code: "invalid_glob".into(),
                             path: path.into(),
                             title: "Glob does not match any files".into(),
                             detail: Some(format!("Glob {g} in {path} is invalid: {e}")),
-                        }
+                        },
                     });
                 }
             };
         }
     } else {
-        unreachable!("validate_globs called on globs object with invalid type: must be array or null")
+        unreachable!(
+            "validate_globs called on globs object with invalid type: must be array or null"
+        )
     }
 }
 

@@ -1,4 +1,4 @@
-use serde::{Serialize};
+use serde::Serialize;
 use valico::common::error::ValicoError;
 
 use crate::validation_state::ValidationState;
@@ -177,105 +177,113 @@ impl From<&BoxedValicoError> for ValidationError {
     fn from(err: &BoxedValicoError) -> Self {
         if let Some(err) = err.downcast::<valico::json_schema::errors::WrongType>() {
             ValidationError::WrongTypeSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::MultipleOf>() {
             ValidationError::MultipleOfSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::Maximum>() {
             ValidationError::MaximumSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::Minimum>() {
             ValidationError::MinimumSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::MaxLength>() {
             ValidationError::MaxLengthSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::MinLength>() {
             ValidationError::MinLengthSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::Pattern>() {
             ValidationError::PatternSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::MaxItems>() {
             ValidationError::MaxItemsSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::MinItems>() {
             ValidationError::MinItemsSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::UniqueItems>() {
             ValidationError::UniqueItemsSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::Items>() {
             ValidationError::ItemsSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::MaxProperties>() {
             ValidationError::MaxPropertiesSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::MinProperties>() {
             ValidationError::MinPropertiesSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::Required>() {
             ValidationError::RequiredSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::Properties>() {
             ValidationError::PropertiesSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::Enum>() {
             ValidationError::EnumSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::AnyOf>() {
             ValidationError::AnyOfSchemaError {
-                states: err.states.iter().map(|state| ValidationState::from(state)).collect(),
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                states: err
+                    .states
+                    .iter()
+                    .map(|state| ValidationState::from(state))
+                    .collect(),
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::OneOf>() {
             ValidationError::OneOfSchemaError {
-                states: err.states.iter().map(|state| ValidationState::from(state)).collect(),
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                states: err
+                    .states
+                    .iter()
+                    .map(|state| ValidationState::from(state))
+                    .collect(),
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::Const>() {
             ValidationError::ConstSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::Contains>() {
             ValidationError::ContainsSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::ContainsMinMax>() {
             ValidationError::ContainsMinMaxSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::Not>() {
             ValidationError::NotSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::DivergentDefaults>() {
             ValidationError::DivergentDefaultsSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::Format>() {
             ValidationError::FormatSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else if let Some(err) = err.downcast::<valico::json_schema::errors::Unevaluated>() {
             ValidationError::UnevaluatedSchemaError {
-                meta: ValidationErrorMetadata::from_valico_error(err)
+                meta: ValidationErrorMetadata::from_valico_error(err),
             }
         } else {
             ValidationError::UnknownSchemaError { meta: err.into() }

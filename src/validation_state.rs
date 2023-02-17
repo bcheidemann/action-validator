@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::{validation_error::ValidationError, config::ActionType};
+use crate::{config::ActionType, validation_error::ValidationError};
 
 #[derive(Serialize, Debug)]
 pub struct ValidationState {

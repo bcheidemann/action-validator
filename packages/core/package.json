@@ -5,7 +5,7 @@
     "Ben Heidemann <ben@heidemann.co.uk>"
   ],
   "description": "Validator for GitHub action and workflow YAML files",
-  "version": "0.0.1",
+  "version": "0.0.0-git",
   "license": "GPL-3.0-only",
   "repository": {
     "type": "git",

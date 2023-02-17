@@ -1,4 +1,6 @@
+#!/usr/bin/env node
 // @ts-check
+
 import chalk from "chalk";
 import fs from "fs";
 import * as actionValidator from "@action-validator/core";

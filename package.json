@@ -1,26 +1,10 @@
 {
-  "name": "@action-validator/lib",
-  "collaborators": [
-    "Matt Palmer <matt@hezmatt.org>",
-    "Ben Heidemann <ben@heidemann.co.uk>"
-  ],
-  "description": "Validator for GitHub action and workflow YAML files",
-  "version": "0.0.1",
+  "name": "@action-validator/root",
+  "private": true,
+  "version": "0.0.0-git",
   "license": "GPL-3.0-only",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/mpalmer/action-validator"
-  },
-  "files": [
-    "dist/action_validator_bg.wasm",
-    "dist/action_validator.js",
-    "dist/action_validator.d.ts"
-  ],
-  "main": "pkg/action_validator.js",
-  "homepage": "https://github.com/mpalmer/action-validator",
-  "types": "dist/action_validator.d.ts",
   "scripts": {
-    "build": "npx wasm-pack build --out-dir target/wasm-pack/build --no-typescript --target nodejs --features js && cp target/wasm-pack/build/action_validator_bg.wasm dist/ && cp target/wasm-pack/build/action_validator.js dist/ && cp target/wasm-pack/build/action_validator.js dist/",
+    "build": "npx wasm-pack build --out-dir target/wasm-pack/build --no-typescript --target nodejs --features js && cp target/wasm-pack/build/action_validator_bg.wasm packages/core/ && cp target/wasm-pack/build/action_validator.js packages/core/ && cp target/wasm-pack/build/action_validator.js packages/core/",
     "test": "node test/run.mjs",
     "lint": "prettier --check .",
     "format": "prettier --write ."

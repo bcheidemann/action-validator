@@ -19,10 +19,14 @@ export type ParseErrorMetadata = {
 };
 
 export type ValidationError =
-  | { meta: ValidationErrorMetadata; states?: ValidationState[] }
+  | {
+      meta: ValidationErrorMetadata;
+      states?: Omit<ValidationState, "actionType">[];
+    }
   | { meta: ParseErrorMetadata };
 
 export type ValidationState = {
+  actionType: "action" | "workflow";
   errors: ValidationError[];
 };
 

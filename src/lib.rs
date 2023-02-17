@@ -133,8 +133,10 @@ fn validate_paths(doc: &serde_json::Value, state: &mut ValidationState) {
 }
 
 #[cfg(feature = "js")]
-fn validate_globs(_: &serde_json::Value, _: &str, _: &mut ValidationState) {
-    log::warn("Glob validation is not yet supported.");
+fn validate_globs(value: &serde_json::Value, path: &str, _: &mut ValidationState) {
+    if !value.is_null() {
+        log::warn(&format!("WARNING: Glob validation is not yet supported. Glob at {path} will not be validated."));
+    }
 }
 
 #[cfg(not(feature = "js"))]

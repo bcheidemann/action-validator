@@ -143,11 +143,6 @@ jobs:
           mv package-lock.json package-lock.json.orig
           sed "s/0\\.0\\.0-git/${RELEASE_TAG##*\/v}/" package-lock.json.orig >package-lock.json
 
-      - name: Copy .npmrc
-        run: cp .npmrc $PACKAGE_DIR/.npmrc
-        env:
-          PACKAGE_DIR: ${{ matrix.package-dir }}
-
       - name: Publish NPM
         run: npm publish
         working-directory: ${{ matrix.package-dir }}

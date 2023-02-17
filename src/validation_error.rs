@@ -244,7 +244,7 @@ impl From<&BoxedValicoError> for ValidationError {
                 states: err
                     .states
                     .iter()
-                    .map(|state| ValidationState::from(state))
+                    .map(ValidationState::from)
                     .collect(),
                 meta: ValidationErrorMetadata::from_valico_error(err),
             }
@@ -253,7 +253,7 @@ impl From<&BoxedValicoError> for ValidationError {
                 states: err
                     .states
                     .iter()
-                    .map(|state| ValidationState::from(state))
+                    .map(ValidationState::from)
                     .collect(),
                 meta: ValidationErrorMetadata::from_valico_error(err),
             }

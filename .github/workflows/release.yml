@@ -145,7 +145,7 @@ jobs:
           sed "s/0\\.0\\.0-git/${RELEASE_TAG##*\/v}/" package-lock.json.orig >package-lock.json
 
       - name: Publish NPM
-        run: npm publish
+        run: npm publish --access public
         working-directory: ${{ matrix.package-dir }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -3,7 +3,7 @@
 
 import chalk from "chalk";
 import fs from "fs";
-import * as actionValidator from "@bcheidemann__test/action-validator-core";
+import * as actionValidator from "@action-validator/core";
 
 function usage(exitCode = 0) {
   console.log(

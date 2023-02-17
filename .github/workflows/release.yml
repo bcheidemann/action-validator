@@ -146,6 +146,13 @@ jobs:
           mv package-lock.json package-lock.json.orig
           sed "s/0\\.0\\.0-git/${RELEASE_TAG##*\/v}/" package-lock.json.orig >package-lock.json
 
+      - name: Copy README.md and LICENSE to package
+        env:
+          PACKAGE_DIR: ${{ matrix.package-dir }}
+        run: |
+          cp README.md $PACKAGE_DIR/README.md
+          cp LICENSE $PACKAGE_DIR/LICENSE
+
       - name: Publish NPM
         run: npm publish --access public
         working-directory: ${{ matrix.package-dir }}

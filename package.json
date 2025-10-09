@@ -6,9 +6,9 @@
   "workspaces": ["packages/*"],
   "scripts": {
     "build": "./scripts/build-wasm.sh",
-    "build:dev": "WASM_PACK_BUILD_FLAGS='--no-opt' ./scripts/build-wasm.sh",
+    "build:dev": "./scripts/build-wasm.sh --dev",
     "test": "./scripts/test-wasm.sh",
-    "test:dev": "WASM_PACK_BUILD_FLAGS='--no-opt' ./scripts/test-wasm.sh",
+    "test:dev": "./scripts/test-wasm.sh --dev",
     "lint": "prettier --check .",
     "format": "prettier --write ."
   },
